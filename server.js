@@ -154,7 +154,7 @@ app.get('/api/admin/analytics', admin, wrap(async (req, res) => {
   const [[t]] = await db().query('SELECT COUNT(*) n, COALESCE(SUM(total),0) r FROM orders WHERE DATE(created_at) = CURDATE()');
   const [[a]] = await db().query('SELECT COUNT(*) n, COALESCE(SUM(total),0) r FROM orders');
   const [top] = await db().query('SELECT name, CAST(SUM(qty) AS UNSIGNED) c FROM order_items GROUP BY name ORDER BY c DESC LIMIT 5');
-  res.json({ todayOrders: t.n, todayRevenue: Number(t.r), totalOrders: a.n, totalRevenue: Number(a.r),
+  res.json({ todayOrders: Number(t.n), todayRevenue: Number(t.r), totalOrders: Number(a.n), totalRevenue: Number(a.r),
              topItems: top.map(x => [x.name, Number(x.c)]) });
 }));
 
