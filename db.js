@@ -1,14 +1,22 @@
 require('dotenv').config();
 
+const FALLBACK_PG_URL = 'postgresql://project_ubvw_user:mJVmvnu6HhybpOP5qKuWhEAoVW9N3k0i@dpg-db85c4gu01pc73ejgr30-a/project_ubvw';
+
+const activeDbUrl =
+  process.env.DATABASE_URL ||
+  process.env.INTERNAL_DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  FALLBACK_PG_URL;
+
 const {
-  DATABASE_URL,
   DB_HOST = 'localhost',
   DB_USER = 'root',
   DB_PASSWORD = '',
   DB_NAME = 'canteen_db'
 } = process.env;
 
-const isPostgres = !!DATABASE_URL || process.env.DB_CLIENT === 'postgres' || process.env.DB_TYPE === 'postgres';
+const isExplicitMysql = process.env.DB_CLIENT === 'mysql' || process.env.USE_MYSQL === 'true';
+const isPostgres = !isExplicitMysql && (!!activeDbUrl || process.env.DB_CLIENT === 'postgres');
 
 let pool;
 let dbInterface;
@@ -64,15 +72,14 @@ async function executePgQuery(executor, sql, params = []) {
 async function initPostgres() {
   const { Pool } = require('pg');
 
+  const connectionString = activeDbUrl;
   let ssl = false;
-  if (DATABASE_URL && (DATABASE_URL.includes('render.com') || DATABASE_URL.includes('dpg-') || process.env.NODE_ENV === 'production')) {
-    if (!DATABASE_URL.includes('sslmode=disable')) {
-      ssl = { rejectUnauthorized: false };
-    }
+  if (connectionString && !connectionString.includes('localhost') && !connectionString.includes('127.0.0.1')) {
+    ssl = { rejectUnauthorized: false };
   }
 
   pool = new Pool({
-    connectionString: DATABASE_URL,
+    connectionString,
     ssl
   });
 
@@ -154,7 +161,7 @@ async function initPostgres() {
       `);
     }
 
-    console.log('PostgreSQL ready (connected via DATABASE_URL)');
+    console.log('PostgreSQL ready (connected to ' + (pool.options.connectionString ? 'Render Database' : 'PostgreSQL') + ')');
   } finally {
     client.release();
   }
