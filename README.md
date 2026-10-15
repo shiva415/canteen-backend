@@ -1,37 +1,42 @@
-# Canteen Backend API
+# Canteen Backend (Spring Boot)
 
-Express.js REST API for Smart Campus Canteen Ordering & Pre-Booking System with PostgreSQL & MySQL support.
-
-## Features
-- User authentication (registration, login with hashed passwords via `scrypt`)
-- Menu management & live stock updates
-- Order placement with real-time wait estimation
-- Transactional order processing with inventory lock (`FOR UPDATE`)
-- Admin dashboard with order lifecycle management & sales analytics
-- Built-in PostgreSQL support with automated table creation & sequence management
+High-performance **Java 21 / Spring Boot 3** REST API for the Smart Campus Canteen Ordering & Pre-Booking System.
 
 ## Tech Stack
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Database**: PostgreSQL (via `pg`) / MySQL (via `mysql2`)
+- **Language**: Java 21 (LTS)
+- **Framework**: Spring Boot 3.3.4 (Spring Web, Spring Data JPA, Hibernate, Validation)
+- **Database**: PostgreSQL (Primary) / MySQL (Compatible)
+- **Security**: JWT & HMAC SHA-256 Auth, BCrypt password hashing, Admin access control
+- **Build Tool**: Maven
 
-## Deployment on Render
-1. Create a **Web Service** connected to `https://github.com/shiva415/canteen-backend`.
-2. Configure Settings:
-   - **Environment**: Node
+## Features
+- **Student Auth**: Registration, Login, Token generation & validation
+- **Live Menu**: Item availability, dynamic stock management
+- **Order Placement**: Transactional inventory locking (`PESSIMISTIC_WRITE`), dynamic wait estimation
+- **Live Tracking**: Order tracking by token, student order history
+- **Admin Dashboard**: Orders overview, status lifecycle update (`Placed` -> `Preparing` -> `Ready` -> `Collected`), menu item management & pricing
+- **Sales Analytics**: Today's orders & revenue, total orders & revenue, top-selling items
+
+## Render Deployment
+1. Connect Render Web Service to `https://github.com/shiva415/canteen-backend`.
+2. Settings:
+   - **Environment**: Docker (or Native)
    - **Root Directory**: *(Leave empty / blank)*
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
 3. Environment Variables:
    - `DATABASE_URL`: `postgresql://project_ubvw_user:mJVmvnu6HhybpOP5qKuWhEAoVW9N3k0i@dpg-db85c4gu01pc73ejgr30-a/project_ubvw`
    - `ADMIN_PASSWORD`: `admin123`
    - `AUTH_SECRET`: `your-random-secret-key`
-   - `NODE_ENV`: `production`
 
 ## Local Development
+Requires Java 21+:
 ```bash
-npm install
-npm start
+./mvnw clean spring-boot:run
 ```
-API runs on `http://localhost:5000`.
-Health check: `http://localhost:5000/health`.
+Or with Maven:
+```bash
+mvn clean spring-boot:run
+```
+The API starts on port `5000`:
+- Root check: `http://localhost:5000/`
+- Health check: `http://localhost:5000/health`
+- Menu: `http://localhost:5000/api/menu`
