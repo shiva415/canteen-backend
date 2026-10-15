@@ -9,6 +9,9 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 app.use(cors());
 app.use(express.json());
 
+app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/', (req, res) => res.json({ message: 'Smart Campus Canteen API', status: 'running' }));
+
 const wrap = fn => (req, res) => fn(req, res).catch(e => { console.error(e); res.status(500).json({ error: 'Server error' }); });
 const admin = (req, res, next) => req.headers['x-admin'] === ADMIN_PASSWORD ? next() : res.status(401).json({ error: 'Unauthorized' });
 
@@ -53,7 +56,7 @@ app.post('/api/auth/register', wrap(async (req, res) => {
     const [r] = await db().query('INSERT INTO users (name, email, password_hash) VALUES (?,?,?)', [name, email, hashPw(password)]);
     res.json(session({ id: r.insertId, name, email }));
   } catch (e) {
-    if (e.code === 'ER_DUP_ENTRY') return res.status(400).json({ error: 'This email is already registered' });
+    if (e.code === 'ER_DUP_ENTRY' || e.code === '23505') return res.status(400).json({ error: 'This email is already registered' });
     throw e;
   }
 }));
@@ -93,7 +96,7 @@ app.post('/api/orders', needUser, wrap(async (req, res) => {
       total += m.price * qty;
     }
     const [[{ pending }]] = await conn.query("SELECT COUNT(*) pending FROM orders WHERE status IN ('Placed','Preparing')");
-    const est = Math.max(5, Math.min(30, 5 + pending * 2));
+    const est = Math.max(5, Math.min(30, 5 + (parseInt(pending, 10) || 0) * 2));
     const [r] = await conn.query(
       'INSERT INTO orders (student_name, pickup_slot, total, pay_method, est_wait_min, user_id) VALUES (?,?,?,?,?,?)',
       [name, slot, total, payMethod || 'UPI', est, req.user.id]);
@@ -155,5 +158,5 @@ app.get('/api/admin/analytics', admin, wrap(async (req, res) => {
              topItems: top.map(x => [x.name, Number(x.c)]) });
 }));
 
-init().then(() => app.listen(PORT, () => console.log(`API running at http://localhost:${PORT}`)))
-  .catch(e => { console.error('\nCould not connect to MySQL. Check backend/.env (DB_USER / DB_PASSWORD) and that MySQL is running.\n', e.message); process.exit(1); });
+init().then(() => app.listen(PORT, '0.0.0.0', () => console.log(`API running on port ${PORT}`)))
+  .catch(e => { console.error('\nCould not connect to database. Check DATABASE_URL or backend/.env configuration.\n', e); process.exit(1); });
